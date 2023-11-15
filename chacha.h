@@ -64,4 +64,10 @@ class ChaCha {
   std::size_t pos_ = -1;
 };
 
+void TestChaChaQuarterRound();
+void TestChaChaQuarterRoundOnChaChaState();
+void TestChaChaBlock();
+void TestChaChaEncrypt();
+void TestChaChaDecrypt();
+
 #endif  // CHACHA_H_
