@@ -1,6 +1,6 @@
 #include "chacha.h"
 
-#include <cassert>  // assert
+#include <array>    // array
 #include <climits>  // CHAR_BIT
 #include <cstddef>  // size_t
 #include <cstdint>  // uint32_t, uint8_t
@@ -20,10 +20,11 @@ std::uint32_t ChaCha::u8tou32l(const std::uint8_t* n) {
   return res;
 }
 
-ChaCha::ChaCha(const std::uint8_t* key, const std::uint8_t* nonce,
+ChaCha::ChaCha(const std::array<std::uint8_t, kKeySize>& key,
+               const std::array<std::uint8_t, kNonceSize>& nonce,
                std::uint32_t counter) {
-  std::memcpy(key_, key, sizeof(key_));
-  std::memcpy(nonce_, nonce, sizeof(nonce_));
+  std::memcpy(key_, key.data(), sizeof(key_));
+  std::memcpy(nonce_, nonce.data(), sizeof(nonce_));
   counter_ = counter;
   Init();
 }
@@ -156,6 +157,10 @@ std::string ChaCha::Decrypt(const std::uint8_t* ciphertext, std::size_t size) {
   return plaintext;
 }
 
+#if (CHACHA_TEST > 0)
+#include <cassert>  // assert
+#include <cstdio>   // printf
+
 void TestChaChaQuarterRound() {
   std::uint32_t vector[4] = {0x11111111U, 0x01020304U, 0x9b8d6f43U,
                              0x01234567U};
@@ -164,6 +169,7 @@ void TestChaChaQuarterRound() {
   assert(vector[1] == 0xcb1cf8ceU);
   assert(vector[2] == 0x4581472eU);
   assert(vector[3] == 0x5881c4bbU);
+  printf("%s: OK\n", __func__);
 }
 
 void TestChaChaQuarterRoundOnChaChaState() {
@@ -190,15 +196,16 @@ void TestChaChaQuarterRoundOnChaChaState() {
   assert(vector[13] == 0xccc07c79U);
   assert(vector[14] == 0x2098d9d6U);
   assert(vector[15] == 0x91dbd320U);
+  printf("%s: OK\n", __func__);
 }
 
 void TestChaChaBlock() {
-  std::uint8_t key[32] = {
+  std::array<std::uint8_t, ChaCha::kKeySize> key = {
       0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
       0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
       0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
   };
-  std::uint8_t nonce[16] = {
+  std::array<std::uint8_t, ChaCha::kNonceSize> nonce = {
       0x00, 0x00, 0x00, 0x09, 0x00, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x00, 0x00,
   };
   std::uint32_t counter = 1;
@@ -252,15 +259,16 @@ void TestChaChaBlock() {
   assert(sizeof(chacha.state_) == sizeof(serialized_block));
   assert(std::memcmp(chacha.state_, serialized_block,
                      sizeof(serialized_block)) == 0);
+  printf("%s: OK\n", __func__);
 }
 
 void TestChaChaEncrypt() {
-  std::uint8_t key[32] = {
+  std::array<std::uint8_t, ChaCha::kKeySize> key = {
       0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
       0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
       0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
   };
-  std::uint8_t nonce[16] = {
+  std::array<std::uint8_t, ChaCha::kNonceSize> nonce = {
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x00, 0x00,
   };
   std::uint32_t counter = 1;
@@ -284,15 +292,16 @@ void TestChaChaEncrypt() {
   };
   assert(sizeof(data) == ciphertext.size());
   assert(std::memcmp(data, ciphertext.data(), sizeof(data)) == 0);
+  printf("%s: OK\n", __func__);
 }
 
 void TestChaChaDecrypt() {
-  std::uint8_t key[32] = {
+  std::array<std::uint8_t, ChaCha::kKeySize> key = {
       0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
       0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15,
       0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
   };
-  std::uint8_t nonce[16] = {
+  std::array<std::uint8_t, ChaCha::kNonceSize> nonce = {
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4a, 0x00, 0x00, 0x00, 0x00,
   };
   std::uint32_t counter = 1;
@@ -315,4 +324,6 @@ void TestChaChaDecrypt() {
       "tip for the future, sunscreen would be it.";
   auto data = chacha.Decrypt(ciphertext, sizeof(ciphertext));
   assert(data == plaintext);
+  printf("%s: OK\n", __func__);
 }
+#endif

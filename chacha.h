@@ -1,22 +1,33 @@
 #ifndef CHACHA_H_
 #define CHACHA_H_
 
+#include <array>    // array
 #include <cstddef>  // size_t
 #include <cstdint>  // uint32_t, uint8_t
 #include <string>   // string
 #include <vector>   // vector
 
+#ifndef CHACHA_TEST
+#define CHACHA_TEST 0
+#endif
+
 // The ChaCha20 Encryption Algorithm
 // https://datatracker.ietf.org/doc/html/rfc8439
 class ChaCha {
+#if (CHACHA_TEST > 0)
   friend void TestChaChaQuarterRound();
   friend void TestChaChaQuarterRoundOnChaChaState();
   friend void TestChaChaBlock();
   friend void TestChaChaEncrypt();
   friend void TestChaChaDecrypt();
+#endif
 
  public:
-  ChaCha(const std::uint8_t* key, const std::uint8_t* nonce,
+  static constexpr std::size_t kKeySize = 32;
+  static constexpr std::size_t kNonceSize = 12;
+
+  ChaCha(const std::array<std::uint8_t, kKeySize>& key,
+         const std::array<std::uint8_t, kNonceSize>& nonce,
          std::uint32_t counter);
 
   std::vector<std::uint8_t> Encrypt(const char* plaintext);
@@ -28,8 +39,6 @@ class ChaCha {
   std::string Decrypt(const std::uint8_t* cipher, std::size_t size);
 
  private:
-  static constexpr std::size_t kKeySize = 32;
-  static constexpr std::size_t kNonceSize = 16;
   static constexpr std::size_t kStateSize = 16;
   static constexpr std::size_t kStateCounterIdx = 12;
   static constexpr std::size_t kIteration = 10;
@@ -64,10 +73,12 @@ class ChaCha {
   std::size_t pos_ = -1;
 };
 
+#if (CHACHA_TEST > 0)
 void TestChaChaQuarterRound();
 void TestChaChaQuarterRoundOnChaChaState();
 void TestChaChaBlock();
 void TestChaChaEncrypt();
 void TestChaChaDecrypt();
+#endif
 
 #endif  // CHACHA_H_
